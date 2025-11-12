@@ -14,9 +14,16 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/products")
 @ApplicationScoped
+@Tag(name = "Product Resource", description = "CRUD operations for products")
 public class ProductResource {
     @Inject ProductRepository productRepository;
 
@@ -67,6 +74,23 @@ public class ProductResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(
+            summary = "List all products",
+            description = "Retrieves a list of all available products")
+    @APIResponses(
+            value = {
+                @APIResponse(
+                        responseCode = "200",
+                        description = "Successful, list of products found",
+                        content =
+                                @Content(
+                                        mediaType = "application/json",
+                                        schema = @Schema(implementation = Product.class))),
+                @APIResponse(
+                        responseCode = "400",
+                        description = "Unsuccessful, no products found",
+                        content = @Content(mediaType = "application/json"))
+            })
     public List<Product> getProducts() {
         // Return a list of products
         return productRepository.findAllProducts();
