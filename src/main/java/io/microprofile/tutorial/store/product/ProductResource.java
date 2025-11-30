@@ -13,7 +13,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -26,6 +26,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Tag(name = "Product Resource", description = "CRUD operations for products")
 public class ProductResource {
     @Inject ProductRepository productRepository;
+
+    @Inject
+    @ConfigProperty(name = "product.maintenance.mode", defaultValue = "false")
+    private boolean maintenanceMode;
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -91,8 +95,23 @@ public class ProductResource {
                         description = "Unsuccessful, no products found",
                         content = @Content(mediaType = "application/json"))
             })
-    public List<Product> getProducts() {
-        // Return a list of products
-        return productRepository.findAllProducts();
+    public Response getProducts() {
+        // If in maintenance mode, return Service Unavailable status
+        if (maintenanceMode) {
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                    .entity(
+                            "The product catalog service is currently in maintenance mode. Please try again later.")
+                    .build();
+
+            // If products found, return products and OK status
+        }
+        var products = productRepository.findAllProducts();
+
+        if (products != null && !products.isEmpty()) {
+            return Response.status(Response.Status.OK).entity(products).build();
+            // If products not found, return Not Found status and message
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).entity("No products found").build();
+        }
     }
 }
